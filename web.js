@@ -10,7 +10,7 @@ const pool = new Pool({
 
 app.get('/', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM ta_table LIMIT 50'); // remplace 'ta_table' par ta table réelle
+    const result = await pool.query('SELECT * FROM user_profiles LIMIT 50');
     res.json(result.rows);
   } catch (err) {
     console.error(err);
