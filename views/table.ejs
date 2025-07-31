@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Tableau des données</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+      background: #f4f4f4;
+    }
+    h1 {
+      text-align: center;
+    }
+    .search-container, .pagination {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      padding: 10px;
+      width: 300px;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 8px 12px;
+      margin: 0 5px;
+      font-size: 14px;
+      border: none;
+      background-color: #3498db;
+      color: white;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:disabled {
+      background-color: #aaa;
+      cursor: not-allowed;
+    }
+    table {
+      width: 90%;
+      margin: auto;
+      border-collapse: collapse;
+      background: white;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    th, td {
+      padding: 10px;
+      border: 1px solid #ddd;
+      text-align: left;
+    }
+    th {
+      background-color: #3498db;
+      color: white;
+      cursor: pointer;
+      position: relative;
+    }
+    th.sort-asc::after {
+      content: " ▲";
+      position: absolute;
+      right: 10px;
+    }
+    th.sort-desc::after {
+      content: " ▼";
+      position: absolute;
+      right: 10px;
+    }
+    tr:nth-child(even) {
+      background-color: #f2f2f2;
+    }
+  </style>
+</head>
+<body>
+  <h1>📊 O M B R A 📊</h1>
+
+  <div class="search-container">
+    <input type="text" id="searchInput" placeholder="🔍 Rechercher un pseudo...">
+  </div>
+
+  <table id="dataTable">
+    <thead>
+      <tr>
+        <% if (data.length > 0) { %>
+          <% Object.keys(data[0]).forEach((key, index) => { %>
+            <th data-index="<%= index %>" data-key="<%= key %>"><%= key %></th>
+          <% }) %>
+        <% } else { %>
+          <th>Aucune donnée</th>
+        <% } %>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+    <br>
+
+  <div class="pagination">
+    <button id="prevPage">⬅ Précédent</button>
+    <span id="pageIndicator">Page 1</span>
+    <button id="nextPage">Suivant ➡</button>
+  </div>
+
+  <script>
+    const fullData = <%- JSON.stringify(data) %>;
+    const rowsPerPage = 15;
+    let currentPage = 1;
+    let filteredData = fullData;
+
+    const tableBody = document.querySelector("#dataTable tbody");
+    const searchInput = document.getElementById("searchInput");
+    const headers = document.querySelectorAll("th");
+    const prevBtn = document.getElementById("prevPage");
+    const nextBtn = document.getElementById("nextPage");
+    const pageIndicator = document.getElementById("pageIndicator");
+
+    function renderTable() {
+      tableBody.innerHTML = "";
+      const start = (currentPage - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const pageData = filteredData.slice(start, end);
+
+      pageData.forEach(row => {
+        const tr = document.createElement("tr");
+        Object.values(row).forEach(val => {
+          const td = document.createElement("td");
+          td.textContent = val;
+          tr.appendChild(td);
+        });
+        tableBody.appendChild(tr);
+      });
+
+      pageIndicator.textContent = `Page ${currentPage} / ${Math.ceil(filteredData.length / rowsPerPage)}`;
+      prevBtn.disabled = currentPage === 1;
+      nextBtn.disabled = end >= filteredData.length;
+    }
+
+    searchInput.addEventListener("input", () => {
+      const term = searchInput.value.toLowerCase();
+      filteredData = fullData.filter(row =>
+        row[Object.keys(row)[1]].toLowerCase().includes(term)
+      );
+      currentPage = 1;
+      renderTable();
+    });
+
+    prevBtn.addEventListener("click", () => {
+      if (currentPage > 1) {
+        currentPage--;
+        renderTable();
+      }
+    });
+
+    nextBtn.addEventListener("click", () => {
+      if (currentPage * rowsPerPage < filteredData.length) {
+        currentPage++;
+        renderTable();
+      }
+    });
+
+    // Tri colonne
+    headers.forEach(th => {
+      th.addEventListener("click", () => {
+        const index = parseInt(th.dataset.index);
+        const key = th.dataset.key;
+        const isAsc = th.classList.contains("sort-asc");
+        headers.forEach(h => h.classList.remove("sort-asc", "sort-desc"));
+
+        filteredData.sort((a, b) => {
+          const aVal = isNaN(a[key]) ? a[key] : parseFloat(a[key]);
+          const bVal = isNaN(b[key]) ? b[key] : parseFloat(b[key]);
+          if (aVal < bVal) return isAsc ? 1 : -1;
+          if (aVal > bVal) return isAsc ? -1 : 1;
+          return 0;
+        });
+
+        th.classList.add(isAsc ? "sort-desc" : "sort-asc");
+        currentPage = 1;
+        renderTable();
+      });
+    });
+
+    // Premier affichage
+    renderTable();
+  </script>
+</body>
+</html>
